@@ -8,6 +8,9 @@ import com.example.retrofitokhttpconnection.adapter.MovieAdapter
 import com.example.retrofitokhttpconnection.databinding.ActivityMainBinding
 import com.example.retrofitokhttpconnection.models.Movie
 import com.example.retrofitokhttpconnection.retrofit.RetrofitClient
+import io.reactivex.Scheduler
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -25,19 +28,19 @@ class MainActivity : AppCompatActivity() {
         list = ArrayList()
 
 
-        RetrofitClient.retrofitService().getMarvel().enqueue(object :Callback<List<Movie>>{
-            override fun onResponse(call: Call<List<Movie>>, response: Response<List<Movie>>) {
-                if (response.isSuccessful){
-                    list = response.body()!!
-                    binding.rvMain.layoutManager = LinearLayoutManager(this@MainActivity)
-                    movieAdapter = MovieAdapter(list)
-                    binding.rvMain.adapter = movieAdapter
-                }
-            }
+        RetrofitClient.retrofitService().getMarvel()
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io())
+            .subscribe(
+                {
+                    result ->
+                            movieAdapter.list = result
 
-            override fun onFailure(call: Call<List<Movie>>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "internet error!!!", Toast.LENGTH_SHORT).show()
-            }
-        })
+
+                },{
+                    Toast.makeText(this, "$it", Toast.LENGTH_SHORT).show()
+                }
+            )
+        binding.rvMain.adapter = movieAdapter
     }
 }
